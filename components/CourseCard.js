@@ -1,11 +1,8 @@
 import React from 'react';
 import { Box, Typography, Card, CardContent, CardActions, Button } from '@mui/material';
 
-const CourseCard = ({ course, role, enrollments, handleEnroll, handleDrop }) => {
+const CourseCard = ({ course, role, handleEnroll, handleDrop, isEnrolled }) => {
   // Check if student is enrolled in the course
-  console.log("isEnrolled: ", enrollments)
-  console.log("courseddddd: ", course.id)
-  const isEnrolled = enrollments.includes(course.id);  // Check if course ID is in the enrollments list
 
   return (
     <Box

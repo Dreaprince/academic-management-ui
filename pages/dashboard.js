@@ -1,5 +1,3 @@
-// pages/dashboard.js
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardStudent from '../components/DashboardStudent';
@@ -14,29 +12,32 @@ const Dashboard = () => {
     const router = useRouter();
 
     useEffect(() => {
-        setIsClient(true);  // Set the flag to true once the component is mounted
+        // Only access localStorage on the client-side
+        if (typeof window !== 'undefined') {
+            setIsClient(true);  // Set the flag to true once the component is mounted
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login'); // Redirect to login if no token exists
-            return; // Prevent further code execution
-        }
+            const token = localStorage.getItem('token');
+            if (!token) {
+                router.push('/login'); // Redirect to login if no token exists
+                return; // Prevent further code execution
+            }
 
-        try {
-            // Check if token is in a valid JWT format (3 parts)
-            const parts = token.split('.');
-            if (parts.length === 3) {
-                // Replace URL-safe characters
-                const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-                const decodedPayload = JSON.parse(atob(base64Url)); // Decode only the payload
-                setRole(decodedPayload.role); // Extract the role from the decoded token
-            } else {
-                console.error('Invalid JWT token format');
+            try {
+                // Check if token is in a valid JWT format (3 parts)
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    // Replace URL-safe characters
+                    const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                    const decodedPayload = JSON.parse(atob(base64Url)); // Decode only the payload
+                    setRole(decodedPayload.role); // Extract the role from the decoded token
+                } else {
+                    console.error('Invalid JWT token format');
+                    router.push('/login');
+                }
+            } catch (error) {
+                console.error('Error decoding token:', error);
                 router.push('/login');
             }
-        } catch (error) {
-            console.error('Error decoding token:', error);
-            router.push('/login');
         }
     }, [router]);
 
@@ -50,7 +51,6 @@ const Dashboard = () => {
 
     // Display appropriate dashboard based on role or show loading page
     if (roleLower === 'student') {
-
         return (
             <Layout>
                 <DashboardStudent />
@@ -71,7 +71,7 @@ const Dashboard = () => {
     } else {
         // If the role is invalid or not recognized, redirect to login
         router.push('/'); // Redirect to login page
-          return (
+        return (
             <Layout>
                 <LoadingPage />
             </Layout>
