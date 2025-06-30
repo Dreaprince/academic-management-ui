@@ -6,6 +6,7 @@ import CourseForm from '../components/CourseForm';
 import CourseEnrollment from '../components/CourseEnrollment';
 import UploadSyllabus from '../components/UploadSyllabus';
 import { Box, Snackbar, Alert } from '@mui/material';
+import Layout from '../components/Layout';
 
 // Reusable Box Component for "Manage Your Courses"
 const ManageCoursesHeader = () => (
@@ -23,7 +24,7 @@ const ManageCoursesHeader = () => (
 const Courses = () => {
     const [courses, setCourses] = useState([]);
     const [role, setRole] = useState('');
-    const [enrollments, setEnrollments] = useState([]); // State for tracking student enrollments
+    const [enrollments, setEnrollments] = useState([]);
     const [studentId, setStudentId] = useState(''); // Store current student's ID
     const [snackbarOpen, setSnackbarOpen] = useState(false);  // State for Snackbar visibility
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -51,39 +52,76 @@ const Courses = () => {
             }
         }
 
-        // Fetch courses from the API using fetchCourses from api.js
+        // Fetch courses from the API
         const loadCourses = async () => {
             try {
-                const coursesData = await fetchCourses();  // Use the imported fetchCourses function
-                setCourses(Array.isArray(coursesData?.data) ? coursesData?.data : []);
+                const coursesData = await fetchCourses();  // Fetch courses
+                // Update the courses state with enrollment status immediately
+                const updatedCourses = coursesData?.data?.map((course) => {
+                    const isEnrolled = course.enrollments?.some(
+                        (enrollment) =>
+                            enrollment.student.id === studentId &&
+                            (enrollment.status === 'true' || enrollment.status === 'pending')
+                    );
+                    return {
+                        ...course,
+                        isEnrolled,
+                    };
+                });
+                setCourses(updatedCourses || []); // Update the state with courses
             } catch (error) {
                 console.error('Error fetching courses:', error);
             }
         };
 
         loadCourses();  // Call the function to load courses
-    }, [router]);
-
+    }, [router, studentId]);
 
     const handleEnroll = async (courseId) => {
         try {
-            // Enroll the student in the course by calling enrollCourse API
-            await enrollCourse(courseId, studentId);
-            setEnrollments((prevEnrollments) => [...prevEnrollments, courseId]); // Add courseId to enrollments
-            setSnackbarMessage('Enrolled in course successfully');
-            setSnackbarOpen(true);  // Open snackbar with success message
+            const response = await enrollCourse(courseId, studentId); // Enroll the student
+
+            // Check if enrollment was successful (statusCode === "00")
+            if (response.statusCode === "00") {
+                // Update the UI immediately with the new enrollment status
+                setCourses((prevCourses) =>
+                    prevCourses.map((course) =>
+                        course.id === courseId
+                            ? { ...course, isEnrolled: true } // Update `isEnrolled` to true for the enrolled course
+                            : course
+                    )
+                );
+
+                // Show success message in Snackbar
+                setSnackbarMessage('Enrolled in course successfully');
+                setSnackbarOpen(true);
+            } else if (response.statusCode === "409") {
+                // Handle case where the student is already enrolled
+                setSnackbarMessage('You are already enrolled in this course.');
+                setSnackbarOpen(true);
+            } else {
+                // Handle other statuses or unexpected responses
+                setSnackbarMessage('Something went wrong. Please try again.');
+                setSnackbarOpen(true);
+            }
         } catch (error) {
             console.error('Error enrolling in course:', error);
             setSnackbarMessage('Failed to enroll in the course. Please try again.');
-            setSnackbarOpen(true);  // Open snackbar with error message
+            setSnackbarOpen(true); // Open snackbar with error message
         }
     };
 
+
     const handleDrop = async (courseId) => {
         try {
-            // Drop the student from the course by calling dropCourse API
-            await dropCourse(courseId, studentId);
-            setEnrollments((prevEnrollments) => prevEnrollments.filter((id) => id !== courseId)); // Remove courseId from enrollments
+            await dropCourse(courseId, studentId);  // Drop the student from the course
+            setCourses((prevCourses) =>
+                prevCourses.map((course) =>
+                    course.id === courseId
+                        ? { ...course, isEnrolled: false } // Update isEnrolled to false immediately
+                        : course
+                )
+            ); // Update `isEnrolled` immediately
             setSnackbarMessage('Dropped the course successfully');
             setSnackbarOpen(true);  // Open snackbar with success message
         } catch (error) {
@@ -97,19 +135,10 @@ const Courses = () => {
         setSnackbarOpen(false); // Close the snackbar when clickeds
     };
 
-    const checkIfEnrolled = (course) => {
-        const enrollment = course?.enrollments?.find(
-            (enrollment) => enrollment.student.id === studentId
-        );
-
-        // Check if enrollment exists and the status is either 'true' or 'pending'
-        return enrollment ? (enrollment.status === 'true' || enrollment.status === 'pending') : false;
-    };
-
 
     if (role === 'student') {
         return (
-            <div>
+            <Layout>
                 <ManageCoursesHeader />
                 <div>
                     {courses.map((course) => (
@@ -119,8 +148,8 @@ const Courses = () => {
                             role={role}
                             handleEnroll={handleEnroll}
                             handleDrop={handleDrop}
-                            studentId={studentId} // Pass the student ID to CourseCard
-                            isEnrolled={checkIfEnrolled(course)} // Pass the enrollment status
+                            studentId={studentId}
+                            isEnrolled={course.isEnrolled} // Directly use `isEnrolled` from state
                         />
                     ))}
                 </div>
@@ -135,11 +164,11 @@ const Courses = () => {
                         {snackbarMessage}
                     </Alert>
                 </Snackbar>
-            </div>
+            </Layout>
         );
     } else if (role === 'lecturer') {
         return (
-            <div>
+            <Layout>
                 <ManageCoursesHeader />
                 <CourseForm />
                 <div>
@@ -148,11 +177,11 @@ const Courses = () => {
                     ))}
                 </div>
                 <UploadSyllabus />
-            </div>
+            </Layout>
         );
     } else if (role === 'admin') {
         return (
-            <div>
+            <Layout>
                 <ManageCoursesHeader />
                 <div>
                     {courses.map((course) => (
@@ -160,10 +189,10 @@ const Courses = () => {
                     ))}
                 </div>
                 <CourseEnrollment />
-            </div>
+            </Layout>
         );
     } else {
-        return <div>Loading...</div>;
+        return <Layout>Loading...</Layout>;
     }
 };
 

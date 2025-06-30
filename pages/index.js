@@ -22,6 +22,8 @@ const Login = () => {
       // Sending 'email' as 'username' to the backend API
       const response = await axios.post('http://localhost:3705/users/login', { username: email, password });
       localStorage.setItem('token', response.data.data.token);  // Save token to localStorage
+      localStorage.setItem('userName', response.data.data.userName);
+      localStorage.setItem('roleName', response.data.data.roleName);
       router.push('/dashboard');  // Redirect to dashboard after login
     } catch (err) {
       // Handle error response from the API

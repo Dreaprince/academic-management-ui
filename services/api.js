@@ -59,6 +59,18 @@ export const fetchCourses = async () => {
     }
 };
 
+export const fetchEnrollments = async () => {
+    try {
+        const response = await api.get('/enrollment');
+        return response?.data;
+    } catch (error) {
+        console.error('Error fetching enrollment:', error);
+        throw error;  // Rethrow the error so that it can be handled in the component
+    }
+};
+
+
+
 // Create a new course
 export const createCourse = async (courseData) => {
     try {
@@ -85,12 +97,46 @@ export const updateSyllabus = async (courseData) => {
 export const enrollCourse = async (courseId, studentId) => {
   try {
     const response = await api.post('/courses/enroll', { courseId, studentId });
-    return response.data; // Assuming the backend responds with success message/data
+
+    // Return the response data from the API if successful
+    return response.data;
   } catch (error) {
+    // Check for 409 Conflict (Student is already enrolled)
+    if (error.response && error.response.status === 409) {
+      console.log('Student is already enrolled in this course.');
+      return { statusCode: "409", message: 'You are already enrolled in this course.' }; // Return custom message
+    }
+
+    // Log and throw for other errors
     console.error('Error enrolling in course:', error);
-    throw error;
+    throw error;  // Only throw error for other types of errors
   }
 };
+
+export const approveEnrollment = async (enrollmentId, status) => {
+  try {
+    const response = await api.post('courses/enrollment/status', { enrollmentId, status });
+
+    // Return the response data from the API if successful
+    return response.data;
+  } catch (error) {
+    // Check for 409 Conflict (Student is already enrolled)
+    if (error.response && error.response.status === 409) {
+      console.log('Student is already enrolled in this course.');
+      return { statusCode: "409", message: 'You are already enrolled in this course.' }; // Return custom message
+    }
+
+    // Log and throw for other errors
+    console.error('Error enrolling in course:', error);
+    throw error;  // Only throw error for other types of errors
+  }
+};
+
+
+
+
+
+
 
 // Drop a course
 export const dropCourse = async (courseId, studentId) => {
