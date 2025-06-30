@@ -23,15 +23,6 @@ const ManageCoursesHeader = () => (
 
 const Courses = () => {
 
-    function getToken() {
-        if (typeof window !== 'undefined') {
-            let role = localStorage.getItem("token")
-            return role
-        }
-    }
-
-    const token = getToken()
-
 
     const [courses, setCourses] = useState([]);
     const [role, setRole] = useState('');
@@ -42,50 +33,33 @@ const Courses = () => {
     const router = useRouter();
 
     useEffect(() => {
-        if (!token) {
-            router.push('/'); // Redirect to login if no token exists
-        } else {
+        setIsClient(true);
+
+        if (typeof window !== 'undefined') {
+            const storedToken = localStorage.getItem('token');
+            if (!storedToken) {
+                router.push('/');
+                return;
+            }
+            setToken(storedToken);
+
             try {
-                const parts = token.split('.');
+                const parts = storedToken.split('.');
                 if (parts.length === 3) {
                     const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
                     const decodedPayload = JSON.parse(atob(base64Url));
-                    setRole(decodedPayload.role.toLowerCase()); // Extract role from token and set it
-                    setStudentId(decodedPayload.userId); // Get the student ID from the token payload
+                    setRole(decodedPayload.role.toLowerCase());
+                    setStudentId(decodedPayload.userId);
                 } else {
-                    console.error('Invalid JWT token format');
+                    console.error('Invalid JWT format');
                     router.push('/');
                 }
-            } catch (error) {
-                console.error('Error decoding token:', error);
+            } catch (err) {
+                console.error('Failed to decode token:', err);
                 router.push('/');
             }
         }
-
-        // Fetch courses from the API
-        const loadCourses = async () => {
-            try {
-                const coursesData = await fetchCourses();  // Fetch courses
-                // Update the courses state with enrollment status immediately
-                const updatedCourses = coursesData?.data?.map((course) => {
-                    const isEnrolled = course.enrollments?.some(
-                        (enrollment) =>
-                            enrollment.student.id === studentId &&
-                            (enrollment.status === 'true' || enrollment.status === 'pending')
-                    );
-                    return {
-                        ...course,
-                        isEnrolled,
-                    };
-                });
-                setCourses(updatedCourses || []); // Update the state with courses
-            } catch (error) {
-                console.error('Error fetching courses:', error);
-            }
-        };
-
-        loadCourses();  // Call the function to load courses
-    }, [router, studentId]);
+    }, [router]);
 
     const handleEnroll = async (courseId) => {
         try {
