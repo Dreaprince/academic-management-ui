@@ -1,17 +1,32 @@
-// pages/courses.js
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { fetchCourses } from '../services/api';  // Import the fetchCourses function
+import { fetchCourses, enrollCourse, dropCourse } from '../services/api';  // Import the necessary functions
 import CourseCard from '../components/CourseCard';
 import CourseForm from '../components/CourseForm';
 import CourseEnrollment from '../components/CourseEnrollment';
 import UploadSyllabus from '../components/UploadSyllabus';
-import { Box } from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
+
+// Reusable Box Component for "Manage Your Courses"
+const ManageCoursesHeader = () => (
+    <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="10vh" // Ensures it takes up full viewport height
+        flexDirection="column"
+    >
+        <h1>Manage Your Courses</h1>
+    </Box>
+);
 
 const Courses = () => {
     const [courses, setCourses] = useState([]);
     const [role, setRole] = useState('');
+    const [enrollments, setEnrollments] = useState([]); // State for tracking student enrollments
+    const [studentId, setStudentId] = useState(''); // Store current student's ID
+    const [snackbarOpen, setSnackbarOpen] = useState(false);  // State for Snackbar visibility
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -25,67 +40,108 @@ const Courses = () => {
                     const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
                     const decodedPayload = JSON.parse(atob(base64Url));
                     setRole(decodedPayload.role.toLowerCase()); // Extract role from token and set it
+                    setStudentId(decodedPayload.userId); // Get the student ID from the token payload
                 } else {
                     console.error('Invalid JWT token format');
-                    router.push('/login');
+                    router.push('/');
                 }
             } catch (error) {
                 console.error('Error decoding token:', error);
-                router.push('/login');
+                router.push('/');
             }
         }
 
         // Fetch courses from the API using fetchCourses from api.js
         const loadCourses = async () => {
             try {
-                const coursesData = await fetchCourses();
-                //console.log("coursesData: ", coursesData?.data)
-                setCourses(Array.isArray(coursesData?.data) ? coursesData?.data : []);  // Ensure it's always an array
+                const coursesData = await fetchCourses();  // Use the imported fetchCourses function
+                setCourses(Array.isArray(coursesData?.data) ? coursesData?.data : []);
             } catch (error) {
                 console.error('Error fetching courses:', error);
-                setCourses([]);  // Set an empty array in case of error
             }
         };
 
         loadCourses();  // Call the function to load courses
     }, [router]);
 
+
+    const handleEnroll = async (courseId) => {
+        try {
+            // Enroll the student in the course by calling enrollCourse API
+            await enrollCourse(courseId, studentId);
+            setEnrollments((prevEnrollments) => [...prevEnrollments, courseId]); // Add courseId to enrollments
+            setSnackbarMessage('Enrolled in course successfully');
+            setSnackbarOpen(true);  // Open snackbar with success message
+        } catch (error) {
+            console.error('Error enrolling in course:', error);
+            setSnackbarMessage('Failed to enroll in the course. Please try again.');
+            setSnackbarOpen(true);  // Open snackbar with error message
+        }
+    };
+
+    const handleDrop = async (courseId) => {
+        try {
+            // Drop the student from the course by calling dropCourse API
+            await dropCourse(courseId, studentId);
+            setEnrollments((prevEnrollments) => prevEnrollments.filter((id) => id !== courseId)); // Remove courseId from enrollments
+            setSnackbarMessage('Dropped the course successfully');
+            setSnackbarOpen(true);  // Open snackbar with success message
+        } catch (error) {
+            console.error('Error dropping course:', error);
+            setSnackbarMessage('Failed to drop the course. Please try again.');
+            setSnackbarOpen(true);  // Open snackbar with error message
+        }
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbarOpen(false); // Close the snackbar when clicked
+    };
+
+    const checkIfEnrolled = (course) => {
+        const enrollment = course?.enrollments?.find((enrollment) => enrollment.student.id === studentId);
+        return enrollment ? enrollment.status === 'true' : false;  // Check if student is enrolled and the status is 'true'
+    };
+
     if (role === 'student') {
         return (
             <div>
-                <h1>Available Courses</h1>
+                <ManageCoursesHeader />
                 <div>
-                    {Array.isArray(courses) && courses.length ? (
-                        courses.map((course) => (
-                            <CourseCard key={course.id} course={course} />
-                        ))
-                    ) : (
-                        <p>No courses available</p>  // Fallback if no courses exist
-                    )}
+                    {courses.map((course) => (
+                        <CourseCard
+                            key={course.id}
+                            course={course}
+                            role={role}
+                            enrollments={enrollments}
+                            handleEnroll={handleEnroll}
+                            handleDrop={handleDrop}
+                            studentId={studentId} // Pass the student ID to CourseCard
+                            isEnrolled={checkIfEnrolled(course)} // Pass the enrollment status
+                        />
+                    ))}
                 </div>
+
+                {/* Snackbar for success or error message */}
+                <Snackbar
+                    open={snackbarOpen}
+                    autoHideDuration={6000}  // Snackbar will hide after 6 seconds
+                    onClose={handleCloseSnackbar}
+                >
+                    <Alert onClose={handleCloseSnackbar} severity={snackbarMessage.includes('successfully') ? 'success' : 'error'}>
+                        {snackbarMessage}
+                    </Alert>
+                </Snackbar>
             </div>
         );
     } else if (role === 'lecturer') {
         return (
             <div>
-                <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="10vh" // Ensures it takes up full viewport height
-                    flexDirection="column"
-                >
-                    <h1>Manage Your Courses</h1>
-                </Box>
+                <ManageCoursesHeader />
                 <CourseForm />
                 <div>
-                    {Array.isArray(courses) && courses.length ? (
-                        courses.map((course) => (
-                            <CourseCard key={course.id} course={course} />
-                        ))
-                    ) : (
-                        <p>No courses available</p>
-                    )}
+                    {courses.map((course) => (
+                        <CourseCard key={course.id} course={course} role={role} enrollments={enrollments} />
+                    ))}
                 </div>
                 <UploadSyllabus />
             </div>
@@ -93,15 +149,11 @@ const Courses = () => {
     } else if (role === 'admin') {
         return (
             <div>
-                <h1>Admin - Course Management</h1>
+                <ManageCoursesHeader />
                 <div>
-                    {Array.isArray(courses) && courses.length ? (
-                        courses.map((course) => (
-                            <CourseCard key={course.id} course={course} />
-                        ))
-                    ) : (
-                        <p>No courses available</p>
-                    )}
+                    {courses.map((course) => (
+                        <CourseCard key={course.id} course={course} role={role} enrollments={enrollments} />
+                    ))}
                 </div>
                 <CourseEnrollment />
             </div>

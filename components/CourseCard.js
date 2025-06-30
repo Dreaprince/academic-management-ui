@@ -1,9 +1,12 @@
-// components/CourseCard.js
-
 import React from 'react';
 import { Box, Typography, Card, CardContent, CardActions, Button } from '@mui/material';
 
-const CourseCard = ({ course }) => {
+const CourseCard = ({ course, role, enrollments, handleEnroll, handleDrop }) => {
+  // Check if student is enrolled in the course
+  console.log("isEnrolled: ", enrollments)
+  console.log("courseddddd: ", course.id)
+  const isEnrolled = enrollments.includes(course.id);  // Check if course ID is in the enrollments list
+
   return (
     <Box
       sx={{
@@ -35,16 +38,35 @@ const CourseCard = ({ course }) => {
           </Typography>
         </CardContent>
 
-        {/* <CardActions sx={{ justifyContent: 'center', paddingBottom: 2 }}>
-  
-          <Button size="small" variant="contained" color="primary">
-            Enroll
-          </Button>
-        </CardActions> */}
+        <CardActions sx={{ justifyContent: 'center', paddingBottom: 2 }}>
+          {/* Only show enroll/drop buttons for students */}
+          {role === 'student' && (
+            <>
+              {!isEnrolled ? (
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleEnroll(course.id)} // Enroll in the course
+                >
+                  Enroll
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => handleDrop(course.id)} // Drop the course
+                >
+                  Drop
+                </Button>
+              )}
+            </>
+          )}
+        </CardActions>
       </Card>
     </Box>
   );
 };
 
 export default CourseCard;
-
