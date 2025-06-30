@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // Create a reusable axios instance with baseURL
 export const api = axios.create({
-    baseURL: 'http://localhost:3705', // Adjust based on your backend API
+    baseURL: 'http://45.33.3.35:3705', // Adjust based on your backend API
 });
 
 

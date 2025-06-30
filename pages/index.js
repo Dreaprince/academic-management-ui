@@ -16,11 +16,11 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(''); // Reset error before the next request
+    setError(''); // Reset error before the next requests
 
     try {
       // Sending 'email' as 'username' to the backend API
-      const response = await axios.post('http://localhost:3705/users/login', { username: email, password });
+      const response = await axios.post('http://45.33.3.35:3705/users/login', { username: email, password });
       localStorage.setItem('token', response.data.data.token);  // Save token to localStorage
       localStorage.setItem('userName', response.data.data.userName);
       localStorage.setItem('roleName', response.data.data.roleName);
