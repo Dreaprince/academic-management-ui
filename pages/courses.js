@@ -22,6 +22,17 @@ const ManageCoursesHeader = () => (
 );
 
 const Courses = () => {
+
+    function getToken() {
+        if (typeof window !== 'undefined') {
+            let role = localStorage.getItem("token")
+            return role
+        }
+    }
+
+    const token = getToken()
+
+
     const [courses, setCourses] = useState([]);
     const [role, setRole] = useState('');
     const [enrollments, setEnrollments] = useState([]);
@@ -31,7 +42,6 @@ const Courses = () => {
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
         if (!token) {
             router.push('/'); // Redirect to login if no token exists
         } else {
