@@ -30,6 +30,9 @@ const Courses = () => {
     const [studentId, setStudentId] = useState(''); // Store current student's ID
     const [snackbarOpen, setSnackbarOpen] = useState(false);  // State for Snackbar visibility
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [isClient, setIsClient] = useState(false);
+
+
     const router = useRouter();
 
     useEffect(() => {
