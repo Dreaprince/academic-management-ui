@@ -1,26 +1,32 @@
+import { useEffect, useState } from 'react';
 import { Drawer, List, ListItem, ListItemText, Divider, Typography, Box } from '@mui/material';
 import { Home, LibraryBooks, ExitToApp } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 
 export default function Sidebar() {
   const router = useRouter();
+  const [userName, setUserName] = useState('Guest');
+  const [userRole, setUserRole] = useState('Visitor');
 
-  // Retrieve user info from localStorage (assuming the token is stored there)
-  const user = localStorage.getItem('userName'); 
-  const role = localStorage.getItem('roleName');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem('userName');
+      const role = localStorage.getItem('roleName');
 
-  const userName = user || 'Guest'; // Default to 'Guest' if no user info is found
-  const userRole = role || 'Visitor'; // Default to 'Visitor' if no role info is found
+      setUserName(user || 'Guest');
+      setUserRole(role || 'Visitor');
+    }
+  }, []);
 
   const handleNavigation = (path) => {
-    router.push(path); // Navigate to the selected page
+    router.push(path);
   };
 
   const handleLogout = () => {
-    // Clear token and user details from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     router.push('/');
   };
 
