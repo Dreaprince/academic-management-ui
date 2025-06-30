@@ -44,7 +44,6 @@ const Courses = () => {
                 router.push('/');
                 return;
             }
-            setToken(storedToken);
 
             try {
                 const parts = storedToken.split('.');
@@ -63,6 +62,7 @@ const Courses = () => {
             }
         }
     }, [router]);
+
 
     const handleEnroll = async (courseId) => {
         try {
