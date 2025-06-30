@@ -94,13 +94,18 @@ const Courses = () => {
     };
 
     const handleCloseSnackbar = () => {
-        setSnackbarOpen(false); // Close the snackbar when clicked
+        setSnackbarOpen(false); // Close the snackbar when clickeds
     };
 
     const checkIfEnrolled = (course) => {
-        const enrollment = course?.enrollments?.find((enrollment) => enrollment.student.id === studentId);
-        return enrollment ? enrollment.status === 'true' : false;  // Check if student is enrolled and the status is 'true'
+        const enrollment = course?.enrollments?.find(
+            (enrollment) => enrollment.student.id === studentId
+        );
+
+        // Check if enrollment exists and the status is either 'true' or 'pending'
+        return enrollment ? (enrollment.status === 'true' || enrollment.status === 'pending') : false;
     };
+
 
     if (role === 'student') {
         return (
@@ -112,7 +117,6 @@ const Courses = () => {
                             key={course.id}
                             course={course}
                             role={role}
-                            enrollments={enrollments}
                             handleEnroll={handleEnroll}
                             handleDrop={handleDrop}
                             studentId={studentId} // Pass the student ID to CourseCard
@@ -140,7 +144,7 @@ const Courses = () => {
                 <CourseForm />
                 <div>
                     {courses.map((course) => (
-                        <CourseCard key={course.id} course={course} role={role} enrollments={enrollments} />
+                        <CourseCard key={course.id} course={course} role={role} />
                     ))}
                 </div>
                 <UploadSyllabus />
