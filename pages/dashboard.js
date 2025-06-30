@@ -10,14 +10,14 @@ import Layout from '../components/Layout';
 
 const Dashboard = () => {
 
-  function getToken() {
-    if (typeof window !== 'undefined') {
-      let role = localStorage.getItem("token")
-      return role
-    }
-  }
+  // function getToken() {
+  //   if (typeof window !== 'undefined') {
+  //     let role = localStorage.getItem("token")
+  //     return role
+  //   }
+  // }
 
-  const token = getToken()
+  // const token = getToken()
 
 
   const [role, setRole] = useState('');
@@ -27,27 +27,30 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    setIsClient(true);  // Set the flag to true once the component is mounted
-    if (!token) {
-      router.push('/login'); // Redirect to login if no token exists
-      return; // Prevent further code execution
-    }
+    setIsClient(true);
 
-    try {
-      // Check if token is in a valid JWT format (3 parts)
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        // Replace URL-safe characters
-        const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        const decodedPayload = JSON.parse(atob(base64Url)); // Decode only the payload
-        setRole(decodedPayload.role); // Extract the role from the decoded token
-      } else {
-        console.error('Invalid JWT token format');
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
         router.push('/login');
+        return;
       }
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      router.push('/login');
+
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const decodedPayload = JSON.parse(atob(base64Url));
+          setRole(decodedPayload.role);
+        } else {
+          console.error('Invalid JWT token format');
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        router.push('/');
+      }
     }
   }, [router]);
 
