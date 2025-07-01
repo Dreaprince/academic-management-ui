@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Box, Typography, Snackbar, Alert } from '@mui/material';
+import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import AssignmentForm from '../components/AssignmentForm';
 import GradeAssignment from '../components/GradeAssignment';
 import CourseGrade from '../components/CourseGrade';
 import {
+  api,
   fetchCourses,
   fetchAssignments as getAssignments,
-  fetchGradeSummary as getGradeSummary
+  fetchGradeSummary as getGradeSummary,
 } from '../services/api';
 
-
 const AssignmentsPage = () => {
+  const router = useRouter();
+
+  const [isClient, setIsClient] = useState(false);
   const [courses, setCourses] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [gradeSummary, setGradeSummary] = useState(null);
@@ -20,11 +24,12 @@ const AssignmentsPage = () => {
   const [textAnswer, setTextAnswer] = useState('');
   const [role, setRole] = useState('');
   const [studentId, setStudentId] = useState('');
-  const [courseId, setCourseId] = useState('');
+  const [courseId, setSelectedCourseId] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [uploadError, setUploadError] = useState('');
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
-
-
+  // Decode token and set role + studentId
   useEffect(() => {
     setIsClient(true);
 
@@ -53,6 +58,7 @@ const AssignmentsPage = () => {
     }
   }, [router]);
 
+  // Fetch course list
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
@@ -68,6 +74,13 @@ const AssignmentsPage = () => {
 
     fetchCourseData();
   }, []);
+
+  // Fetch assignments and gradess
+  // useEffect(() => {
+  //   if (!courseId) return;
+  //   fetchAssignments();
+  //   if (role === 'student') fetchGradeSummary();
+  // }, [courseId, role]);
 
   const fetchAssignments = async () => {
     try {
@@ -88,8 +101,12 @@ const AssignmentsPage = () => {
     }
   };
 
-
   const handleAssignmentSubmit = async () => {
+    if (!courseId) {
+      showSnackbar('Please select a course first', 'warning');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('studentId', studentId);
     formData.append('courseId', courseId);
@@ -97,10 +114,10 @@ const AssignmentsPage = () => {
     if (file) formData.append('file', file);
 
     try {
-      await axios.post('/api/assignments', formData);
+      await api.post('/assignments/create', formData);
       showSnackbar('Assignment submitted', 'success');
-      fetchAssignments();
-      fetchGradeSummary();
+      // fetchAssignments();
+      // fetchGradeSummary();
       setFile(null);
       setTextAnswer('');
     } catch (err) {
@@ -113,7 +130,7 @@ const AssignmentsPage = () => {
     try {
       await axios.put(`/api/assignments/${submissionId}/grade`, { score });
       showSnackbar('Graded successfully', 'success');
-      fetchAssignments();
+      //fetchAssignments();
     } catch (err) {
       console.error(err);
       showSnackbar('Failed to grade', 'error');
@@ -123,11 +140,6 @@ const AssignmentsPage = () => {
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
-
-  useEffect(() => {
-    fetchAssignments();
-    if (role === 'student') fetchGradeSummary();
-  }, []);
 
   return (
     <Layout>
@@ -142,10 +154,9 @@ const AssignmentsPage = () => {
             setTextAnswer={setTextAnswer}
             onSubmit={handleAssignmentSubmit}
             courses={courses}
-            selectedCourseId={selectedCourseId}
+            selectedCourseId={courseId}
             setSelectedCourseId={setSelectedCourseId}
           />
-
           <CourseGrade gradeSummary={gradeSummary} />
         </>
       )}

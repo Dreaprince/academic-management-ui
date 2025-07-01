@@ -59,6 +59,10 @@ export default function Sidebar() {
             <LibraryBooks />
             <ListItemText primary="Courses" />
           </ListItem>
+          <ListItem button onClick={() => handleNavigation('/assignments')}>
+            <LibraryBooks />
+            <ListItemText primary="Assignments" />
+          </ListItem>
           <Divider />
           <ListItem button onClick={handleLogout}>
             <ExitToApp />

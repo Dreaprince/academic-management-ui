@@ -148,3 +148,26 @@ export const dropCourse = async (courseId, studentId) => {
     throw error;
   }
 };
+
+// Fetch assignments for a specific course
+export const fetchAssignments = async (courseId) => {
+    try {
+        const response = await api.get(`/assignments?${courseId}`);
+        return response.data; // Assume the backend returns a data field with the assignments array
+    } catch (error) {
+        console.error('Error fetching assignments:', error);
+        throw error;
+    }
+};
+
+// Fetch grade summary for a specific student
+export const fetchGradeSummary = async (studentId) => {
+    try {
+        const response = await api.get(`/grades?${studentId}`);
+        return response.data; // Assume the backend returns the grade summary object directly
+    } catch (error) {
+        console.error('Error fetching grade summary:', error);
+        throw error;
+    }
+};
+

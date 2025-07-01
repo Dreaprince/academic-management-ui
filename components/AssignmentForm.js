@@ -10,7 +10,15 @@ const AssignmentForm = ({
   selectedCourseId,
   setSelectedCourseId
 }) => (
-  <Box>
+  <Box
+     sx={{
+        display: 'column',
+        justifyContent: 'center',  // Center the cards horizontally
+        marginBottom: 2,  // Space between cards
+        padding: 2,
+        maxWidth: '500px'
+      }}
+  >
     <Typography variant="h6">Submit Assignment</Typography>
 
     {/* Course Dropdown */}
