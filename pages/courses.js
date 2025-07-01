@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { fetchCourses, enrollCourse, dropCourse, createCourse } from '../services/api';  // Import the necessary functions
+import { fetchCourses, enrollCourse, dropCourse, createCourse, updateSyllabus } from '../services/api';  // Import the necessary functions
 import CourseCard from '../components/CourseCard';
 import CourseForm from '../components/CourseForm';
 import CourseEnrollment from '../components/CourseEnrollment';
@@ -31,6 +31,11 @@ const Courses = () => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);  // State for Snackbar visibility
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [isClient, setIsClient] = useState(false);
+
+    const [file, setFile] = useState(null);
+    const [courseId, setCourseId] = useState('');
+    const [loadingCourses, setLoadingCourses] = useState(true);
+    const [uploadError, setUploadError] = useState('');
 
 
     const router = useRouter();
@@ -63,6 +68,23 @@ const Courses = () => {
         }
     }, [router]);
 
+    useEffect(() => {
+        const fetchCourseData = async () => {
+            try {
+                const response = await fetchCourses();
+                setCourses(response?.data || []);
+            } catch (error) {
+                console.error('Error fetching courses:', error);
+                setUploadError('Failed to load courses');
+            } finally {
+                setLoadingCourses(false);
+            }
+        };
+
+        fetchCourseData();
+    }, []);
+
+
     const handleCreateCourse = async (courseData, resetForm) => {
         setSnackbarMessage('');
         try {
@@ -73,6 +95,9 @@ const Courses = () => {
             // Optionally refetch or add to course list
             const updatedCourses = await fetchCourses();
             setCourses(updatedCourses.data);
+
+            setSnackbarMessage('Course created successfully');
+            setSnackbarOpen(true);
 
             resetForm(); // Reset form after success
         } catch (error) {
@@ -138,6 +163,30 @@ const Courses = () => {
         }
     };
 
+    const handleUpload = async () => {
+        if (!file || !courseId) {
+            setUploadError('Please select a course and upload a file.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('courseId', courseId);
+
+        try {
+            await updateSyllabus(formData);
+            setSnackbarMessage('Syllabus uploaded successfully');
+            setSnackbarOpen(true);
+            setFile(null); // reset
+        } catch (error) {
+            console.error('Error uploading syllabus:', error);
+            setUploadError('Error uploading syllabus. Please try again.');
+            setSnackbarMessage('Error uploading syllabus');
+            setSnackbarOpen(true);
+        }
+    };
+
+
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false); // Close the snackbar when clickeds
     };
@@ -184,7 +233,17 @@ const Courses = () => {
                         <CourseCard key={course.id} course={course} role={role} />
                     ))}
                 </div>
-                <UploadSyllabus />
+                <UploadSyllabus
+                    file={file}
+                    setFile={setFile}
+                    courseId={courseId}
+                    setCourseId={setCourseId}
+                    courses={courses}
+                    loadingCourses={loadingCourses}
+                    error={uploadError}
+                    handleUpload={handleUpload}
+                />
+
             </Layout>
         );
     } else if (role === 'admin') {
