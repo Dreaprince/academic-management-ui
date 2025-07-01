@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button, Box, Typography, MenuItem, FormControl, InputLabel, Select, CircularProgress } from '@mui/material';
 import axios from 'axios';
-import { createCourse, fetchCourses, updateSyllabus } from '../services/api'; // Ensure you are using the correct import for fetchCourses
+import { fetchCourses, updateSyllabus } from '../services/api'; // Ensure you are using the correct import for fetchCourses
 
 const UploadSyllabus = () => {
   const [file, setFile] = useState(null);

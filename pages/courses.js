@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { fetchCourses, enrollCourse, dropCourse } from '../services/api';  // Import the necessary functions
+import { fetchCourses, enrollCourse, dropCourse, createCourse } from '../services/api';  // Import the necessary functions
 import CourseCard from '../components/CourseCard';
 import CourseForm from '../components/CourseForm';
 import CourseEnrollment from '../components/CourseEnrollment';
@@ -62,6 +62,26 @@ const Courses = () => {
             }
         }
     }, [router]);
+
+    const handleCreateCourse = async (courseData, resetForm) => {
+        setSnackbarMessage('');
+        try {
+            const newCourse = await createCourse(courseData);
+            setSnackbarMessage('Course created successfully');
+            setSnackbarOpen(true);
+
+            // Optionally refetch or add to course list
+            const updatedCourses = await fetchCourses();
+            setCourses(updatedCourses.data);
+
+            resetForm(); // Reset form after success
+        } catch (error) {
+            console.error('Error creating course:', error);
+            setSnackbarMessage('Failed to create course. Please try again.');
+            setSnackbarOpen(true);
+        }
+    };
+
 
 
     const handleEnroll = async (courseId) => {
@@ -157,7 +177,8 @@ const Courses = () => {
         return (
             <Layout>
                 <ManageCoursesHeader />
-                <CourseForm />
+                <CourseForm onSubmit={handleCreateCourse} />
+
                 <div>
                     {courses.map((course) => (
                         <CourseCard key={course.id} course={course} role={role} />
