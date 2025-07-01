@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { fetchCourses, enrollCourse, dropCourse, createCourse, updateSyllabus } from '../services/api';  // Import the necessary functions
+import { fetchCourses, enrollCourse, dropCourse, createCourse, updateSyllabus, fetchEnrollments, approveEnrollment } from '../services/api';  // Import the necessary functions
 import CourseCard from '../components/CourseCard';
 import CourseForm from '../components/CourseForm';
 import CourseEnrollment from '../components/CourseEnrollment';
@@ -30,12 +30,14 @@ const Courses = () => {
     const [studentId, setStudentId] = useState(''); // Store current student's ID
     const [snackbarOpen, setSnackbarOpen] = useState(false);  // State for Snackbar visibility
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [isClient, setIsClient] = useState(false);
-
+    const [isClient, setIsClient] = useState(false); 
     const [file, setFile] = useState(null);
     const [courseId, setCourseId] = useState('');
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [uploadError, setUploadError] = useState('');
+
+    const [enrollmentList, setEnrollmentList] = useState([]);
+    const [loadingEnrollments, setLoadingEnrollments] = useState(true);
 
 
     const router = useRouter();
@@ -83,6 +85,26 @@ const Courses = () => {
 
         fetchCourseData();
     }, []);
+
+    useEffect(() => {
+        const loadEnrollments = async () => {
+            try {
+                const enrollmentData = await fetchEnrollments();
+                setEnrollmentList(enrollmentData?.data?.filter((e) => e.status === 'pending') || []);
+            } catch (error) {
+                console.error('Error fetching enrollments:', error);
+                setSnackbarMessage('Failed to load enrollments');
+                setSnackbarOpen(true);
+            } finally {
+                setLoadingEnrollments(false);
+            }
+        };
+
+        if (role === 'admin') {
+            loadEnrollments();
+        }
+    }, [role]);
+
 
 
     const handleCreateCourse = async (courseData, resetForm) => {
@@ -186,6 +208,37 @@ const Courses = () => {
         }
     };
 
+    const handleApprove = async (enrollmentId) => {
+        try {
+            await approveEnrollment(enrollmentId, 'approved');
+            setSnackbarMessage('Enrollment approved successfully');
+            setSnackbarOpen(true);
+
+            const updated = await fetchEnrollments();
+            setEnrollmentList(updated?.data?.filter((e) => e.status === 'pending') || []);
+        } catch (error) {
+            console.error('Error approving enrollment:', error);
+            setSnackbarMessage('Failed to approve enrollment');
+            setSnackbarOpen(true);
+        }
+    };
+
+    const handleReject = async (enrollmentId) => {
+        try {
+            await approveEnrollment(enrollmentId, 'rejected');
+            setSnackbarMessage('Enrollment rejected successfully');
+            setSnackbarOpen(true);
+
+            const updated = await fetchEnrollments();
+            setEnrollmentList(updated?.data?.filter((e) => e.status === 'pending') || []);
+        } catch (error) {
+            console.error('Error rejecting enrollment:', error);
+            setSnackbarMessage('Failed to reject enrollment');
+            setSnackbarOpen(true);
+        }
+    };
+
+
 
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false); // Close the snackbar when clickeds
@@ -255,7 +308,13 @@ const Courses = () => {
                         <CourseCard key={course.id} course={course} role={role} enrollments={enrollments} />
                     ))}
                 </div>
-                <CourseEnrollment />
+                <CourseEnrollment
+                    enrollments={enrollmentList}
+                    loading={loadingEnrollments}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                />
+
             </Layout>
         );
     } else {
